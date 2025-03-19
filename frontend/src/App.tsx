@@ -1,5 +1,6 @@
 import React from 'react';
-import { Admin, Resource } from 'react-admin';
+import { Admin, CustomRoutes, RenderResourcesFunction, Resource } from 'react-admin';
+import { Route } from 'react-router-dom';
 import { UserList, UserCreate, UserEdit, UserShow } from "./users";
 import { AbilityList, AbilityShow } from "./abilities";
 import { AssetList, AssetCreate, AssetEdit, AssetShow } from "./assets";
@@ -16,6 +17,82 @@ import { Dashboard } from "./Dashboard";
 import { authProvider } from "./authProvider";
 import { CustomLayout } from './CustomLayout';
 import Login from './Login';
+import { VerifyEmail } from './VerifyEmail';
+import { hasAccess, ResourcePermissions } from './utils/authUtils';
+
+
+// Resource configuration
+const resourceConfig = [
+  {
+    name: "assets",
+    list: AssetList,
+    create: AssetCreate,
+    edit: AssetEdit,
+    show: AssetShow,
+    icon: DocIcon,
+    recordRepresentation: 'name',
+  },
+  {
+    name: "users",
+    list: UserList,
+    create: UserCreate,
+    edit: UserEdit,
+    show: UserShow,
+    icon: UserIcon,
+    recordRepresentation: 'name',
+  },
+  {
+    name: "abilities",
+    list: AbilityList,
+    show: AbilityShow,
+    icon: ExtensionIcon,
+    recordRepresentation: 'id',
+  },
+  {
+    name: "resources",
+    list: ChannelList,
+    show: ChannelShow,
+    icon: SyncAltIcon,
+    recordRepresentation: 'id',
+  },
+  {
+    name: "downloads",
+    list: DownloadsList,
+  },
+  {
+    name: "shares",
+    list: ShareList,
+    create: ShareCreate,
+    edit: ShareEdit,
+    show: ShareShow,
+    icon: LinkIcon,
+    recordRepresentation: 'id',
+  },
+];
+
+const renderResources: RenderResourcesFunction = (permissions: ResourcePermissions) => (
+  <>
+    {resourceConfig.map(resource => {
+      if (!hasAccess(resource.name, "list", permissions)) return null;
+
+      return (
+        <Resource
+          key={resource.name}
+          name={resource.name}
+          list={resource.list}
+          create={hasAccess(resource.name, "create", permissions) ? resource.create : undefined}
+          edit={hasAccess(resource.name, "edit", permissions) ? resource.edit : undefined}
+          show={hasAccess(resource.name, "show", permissions) ? resource.show : undefined}
+          icon={resource.icon}
+          recordRepresentation={resource.recordRepresentation}
+        />
+      );
+    })}
+    <CustomRoutes noLayout>
+      <Route path='/verify-email/:token' element={<VerifyEmail />} />
+    </CustomRoutes>
+  </>
+);
 
 export const App = () => (
   <Admin
@@ -25,11 +102,6 @@ export const App = () => (
     layout={CustomLayout}
     loginPage={Login}
   >
-    <Resource name="assets" list={AssetList} create={AssetCreate} edit={AssetEdit} show={AssetShow} recordRepresentation='name' icon={DocIcon} />
-    <Resource name="users" list={UserList} create={UserCreate} edit={UserEdit} show={UserShow} recordRepresentation='name' icon={UserIcon} />
-    <Resource name="abilities" list={AbilityList} show={AbilityShow} recordRepresentation='id' icon={ExtensionIcon} />
-    <Resource name="resources" list={ChannelList} show={ChannelShow} recordRepresentation='id' icon={SyncAltIcon} />
-    <Resource name="downloads" list={DownloadsList} />
-    <Resource name="shares" list={ShareList} create={ShareCreate} edit={ShareEdit} show={ShareShow} recordRepresentation='id' icon={LinkIcon} />
+    {renderResources}
   </Admin>
 );
