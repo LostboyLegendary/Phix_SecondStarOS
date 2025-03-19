@@ -1,23 +1,25 @@
-import { AuthProvider } from "react-admin";
-import { login, register, logout } from "./apis/auth";
+import { AuthProvider, useNotify } from "react-admin";
+import { authentication, logout } from "./apis/auth";
 import { jwtDecode } from "jwt-decode";
+
+interface CustomJwtPayload {
+    roles: string[];
+    exp?: number;
+}
 
 export const authProvider: AuthProvider = {
     // called when the user attempts to log in
-    login: async ({ email, isRegistering }) => {
-        let response
+    login: async ({ email }: { email: string }) => {
         try {
-            if (isRegistering) {
-                response = await register(email)
+            const res = await authentication(email)
+            if (res.token) {
+                localStorage.setItem("token", res.token)
+                localStorage.setItem("permissions", JSON.stringify(res.permissions))
+                return Promise.resolve()
             } else {
-                response = await login(email)
+                return { redirectTo: false, stayOnLogin: true };
             }
-            if (response) {
-                localStorage.setItem("token", response.token)
-            } else {
-                return Promise.reject()
-            }
-            return Promise.resolve()
+
         } catch (e) {
             return Promise.reject(e)
         }
@@ -25,7 +27,7 @@ export const authProvider: AuthProvider = {
     // called when the user clicks on the logout button
     logout: () => {
         logout()
-        localStorage.removeItem("token")
+        localStorage.clear()
         return Promise.resolve();
     },
     // called when the API returns an error
@@ -51,5 +53,11 @@ export const authProvider: AuthProvider = {
         return Promise.reject()
     },
     // called when the user navigates to a new location, to check for permissions / roles
-    getPermissions: () => Promise.resolve(),
+    getPermissions: () => {
+        const token = localStorage.getItem("token");
+        if (!token) return Promise.resolve([])
+
+        const permissions = localStorage.getItem("permissions") ? JSON.parse(localStorage.getItem("permissions")!) : []
+        return Promise.resolve(permissions);
+    },
 };

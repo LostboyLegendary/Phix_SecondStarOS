@@ -1,33 +1,36 @@
 import { useMediaQuery, Theme } from "@mui/material";
-import { Create, Edit, EditButton, DeleteButton, List, SimpleList, Show, ShowButton, SimpleForm, SimpleShowLayout, Datagrid, TextField, TextInput, EmailField, useRecordContext } from "react-admin";
+import { Create, Edit, EditButton, DeleteButton, List, SimpleList, Show, ShowButton, SimpleForm, SimpleShowLayout, Datagrid, TextField, TextInput, EmailField, SelectInput, useRecordContext, usePermissions } from "react-admin";
+import { hasAccess } from "./utils/authUtils";
 
 const UserTitle = () => {
     const record = useRecordContext();
     return <span>Users {record ? `- ${record.name}` : ""}</span>;
 };
 
-interface UserRecord {
-    id: string;
-    name: string;
-    email: string;
-}
+const roleChoices = [
+    { id: 'user', name: 'User' },
+    { id: 'admin', name: 'Admin' },
+];
 
 export const UserList = () => {
     const isSmall = useMediaQuery<Theme>((theme) => theme.breakpoints.down("sm"));
+    const { permissions } = usePermissions()
     return (
         <List>
             {isSmall ? (
                 <SimpleList
-                    primaryText={(record: UserRecord) => record.name}
-                    secondaryText={(record: UserRecord) => record.email}
+                    primaryText={(record) => record.name}
+                    secondaryText={(record) => record.email}
+                    tertiaryText={(record) => record.role}
                 />
             ) : (
                 <Datagrid rowClick="edit">
                     <TextField source="name" />
                     <EmailField source="email" />
-                    <ShowButton />
-                    <EditButton />
-                    <DeleteButton />
+                    <TextField source="role" />
+                    {hasAccess("users", "show", permissions) && <ShowButton />}
+                    {hasAccess("users", "edit", permissions) && <EditButton />}
+                    {hasAccess("users", "delete", permissions) && <DeleteButton />}
                 </Datagrid>
             )}
         </List>
@@ -40,6 +43,7 @@ export const UserShow = () => (
             <TextField source="id" />
             <TextField source="name" />
             <EmailField source="email" />
+            <TextField source="role" />
         </SimpleShowLayout>
     </Show>
 );
@@ -49,6 +53,7 @@ export const UserEdit = () => (
         <SimpleForm>
             <TextInput source="name" />
             <TextInput source="email" />
+            <SelectInput source="role" choices={roleChoices} />
         </SimpleForm>
     </Edit>
 );
@@ -58,6 +63,7 @@ export const UserCreate = () => (
         <SimpleForm>
             <TextInput source="name" />
             <TextInput source="email" />
+            <SelectInput source="role" choices={roleChoices} defaultValue="user" />
         </SimpleForm>
     </Create>
 );

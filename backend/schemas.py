@@ -47,6 +47,9 @@ class UserCreateSchema(UserBaseSchema):
 
 class UserSchema(UserBaseSchema):
     id: str
+    name: str
+    email: str
+    role: str
 
 # Asset schemas
 class AssetBaseSchema(BaseModel):
@@ -89,6 +92,9 @@ class ShareSchema(ShareBaseSchema):
     id: str
 
 class RegistrationOptions(BaseModel):
+    email: str
+
+class AuthOptionsRequest(BaseModel):
     email: str
 
 class VerifyRegistration(BaseModel):
